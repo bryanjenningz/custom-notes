@@ -127,6 +127,12 @@ class App extends Component {
     this.setState({ edit: null });
   };
 
+  removeNote = noteId => {
+    const { notes } = this.state;
+    const newNotes = notes.filter(note => note.id !== noteId);
+    this.setState({ notes: newNotes });
+  };
+
   render() {
     const { notes, dragPosition, edit } = this.state;
 
@@ -180,6 +186,7 @@ class App extends Component {
                 editNote={this.editNote}
                 onMouseDown={this.handleMouseDown}
                 toggleVisible={this.toggleNoteVisibility}
+                removeNote={this.removeNote}
               />
             );
           })}
@@ -193,10 +200,17 @@ type NoteProps = {
   note: Note,
   editNote: Note => void,
   onMouseDown: any => void,
-  toggleVisible: string => void
+  toggleVisible: string => void,
+  removeNote: string => void
 };
 
-const NoteView = ({ note, editNote, onMouseDown, toggleVisible }: NoteProps) =>
+const NoteView = ({
+  note,
+  editNote,
+  onMouseDown,
+  toggleVisible,
+  removeNote
+}: NoteProps) =>
   <div
     style={{
       position: "absolute",
@@ -239,7 +253,9 @@ const NoteView = ({ note, editNote, onMouseDown, toggleVisible }: NoteProps) =>
             <a className="card-footer-item" onClick={() => editNote(note)}>
               Edit
             </a>
-            <a className="card-footer-item">Delete</a>
+            <a className="card-footer-item" onClick={() => removeNote(note.id)}>
+              Delete
+            </a>
           </footer>
         </div>
       : ""}
