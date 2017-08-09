@@ -5,11 +5,13 @@ import { render } from "react-dom";
 type AppState = {
   input: string,
   notes: Array<Note>,
-  dragPosition: ?DragPosition
+  dragPosition: ?DragPosition,
+  edit: ?Note
 };
 
 type Note = {
   id: string,
+  title: string,
   text: string,
   x: number,
   y: number,
@@ -17,7 +19,7 @@ type Note = {
 };
 
 type DragPosition = {
-  noteId: number,
+  noteId: string,
   startXY: XY,
   xy: XY
 };
@@ -25,7 +27,7 @@ type DragPosition = {
 type XY = { x: number, y: number };
 
 class App extends Component {
-  state: AppState = { input: "", notes: [], dragPosition: null };
+  state: AppState = { input: "", notes: [], dragPosition: null, edit: null };
 
   componentDidMount = () => {
     window.addEventListener("mousemove", this.handleMouseMove);
@@ -48,6 +50,7 @@ class App extends Component {
       input: "",
       notes: notes.concat({
         id: String(Math.random()),
+        title: "Note",
         text: input,
         x: 50,
         y: 50,
@@ -57,9 +60,9 @@ class App extends Component {
   };
 
   handleMouseDown = event => {
-    const { clientX: x, clientY: y, target: { id } } = event;
+    const { clientX: x, clientY: y, target } = event;
     this.setState({
-      dragPosition: { noteId: id, startXY: { x, y }, xy: { x, y } }
+      dragPosition: { noteId: target.id, startXY: { x, y }, xy: { x, y } }
     });
   };
 
@@ -101,8 +104,23 @@ class App extends Component {
     this.setState({ notes: newNotes });
   };
 
+  editNote = (note: Note) => {
+    this.setState({ edit: note });
+  };
+
+  saveNote = (newNote: Note) => {
+    const newNotes = this.state.notes.map(
+      note => (note.id === newNote.id ? newNote : note)
+    );
+    this.setState({ edit: null, notes: newNotes });
+  };
+
+  cancelEdit = () => {
+    this.setState({ edit: null });
+  };
+
   render() {
-    const { notes, dragPosition } = this.state;
+    const { notes, dragPosition, edit } = this.state;
 
     const dx = dragPosition ? dragPosition.xy.x - dragPosition.startXY.x : 0;
     const dy = dragPosition ? dragPosition.xy.y - dragPosition.startXY.y : 0;
@@ -110,62 +128,157 @@ class App extends Component {
 
     return (
       <div>
-        <div>
-          <form onSubmit={this.handleSubmit}>
-            <input value={this.state.input} onChange={this.handleInput} />
+        <div className="columns">
+          <form className="column" onSubmit={this.handleSubmit}>
+            <input
+              value={this.state.input}
+              onChange={this.handleInput}
+              className="input"
+            />
           </form>
         </div>
         <div style={{ position: "relative" }}>
-          {notes.map(note =>
-            <div
-              key={note.id}
-              style={{
-                position: "absolute",
-                left: note.x + (note.id === noteId ? dx : 0),
-                top: note.y + (note.id === noteId ? dy : 0),
-                width: 300
-              }}
-              className="card"
-            >
-              <header className="card-header">
-                <p className="card-header-title">Note</p>
-                <a className="card-header-icon">
-                  <span className="icon">
-                    <i
-                      className="fa fa-arrows-alt"
-                      id={note.id}
-                      onMouseDown={this.handleMouseDown}
-                    />
-                  </span>
-                </a>
-                <a className="card-header-icon">
-                  <span className="icon">
-                    <i
-                      className="fa fa-angle-down"
-                      onClick={() => this.toggleNoteVisibility(note.id)}
-                    />
-                  </span>
-                </a>
-              </header>
-              {note.visible
-                ? <div>
-                    <div className="card-content">
-                      <div className="content">
-                        {note.text}
-                      </div>
-                    </div>
-                    <footer className="card-footer">
-                      <a className="card-footer-item">Edit</a>
-                      <a className="card-footer-item">Delete</a>
-                    </footer>
-                  </div>
-                : ""}
-            </div>
-          )}
+          {notes.map(note => {
+            if (edit && note.id === edit.id) {
+              return (
+                <EditNote
+                  key={note.id}
+                  note={edit}
+                  editNote={this.editNote}
+                  saveNote={this.saveNote}
+                  cancelEdit={this.cancelEdit}
+                />
+              );
+            }
+
+            const x =
+              dragPosition && dragPosition.noteId === note.id
+                ? note.x + dx
+                : note.x;
+            const y =
+              dragPosition && dragPosition.noteId === note.id
+                ? note.y + dy
+                : note.y;
+
+            return (
+              <NoteView
+                key={note.id}
+                note={{ ...note, x, y }}
+                editNote={this.editNote}
+                onMouseDown={this.handleMouseDown}
+                toggleVisible={this.toggleNoteVisibility}
+              />
+            );
+          })}
         </div>
       </div>
     );
   }
 }
+
+type NoteProps = {
+  note: Note,
+  editNote: Note => void,
+  onMouseDown: any => void,
+  toggleVisible: string => void
+};
+
+const NoteView = ({ note, editNote, onMouseDown, toggleVisible }: NoteProps) =>
+  <div
+    style={{
+      position: "absolute",
+      left: note.x,
+      top: note.y,
+      width: 300
+    }}
+    className="card"
+  >
+    <header className="card-header">
+      <p className="card-header-title">
+        {note.title}
+      </p>
+      <a className="card-header-icon">
+        <span className="icon">
+          <i
+            className="fa fa-arrows-alt"
+            id={note.id}
+            onMouseDown={onMouseDown}
+          />
+        </span>
+      </a>
+      <a className="card-header-icon">
+        <span className="icon">
+          <i
+            className="fa fa-angle-down"
+            onClick={() => toggleVisible(note.id)}
+          />
+        </span>
+      </a>
+    </header>
+    {note.visible
+      ? <div>
+          <div className="card-content">
+            <div className="content">
+              {note.text}
+            </div>
+          </div>
+          <footer className="card-footer">
+            <a className="card-footer-item" onClick={() => editNote(note)}>
+              Edit
+            </a>
+            <a className="card-footer-item">Delete</a>
+          </footer>
+        </div>
+      : ""}
+  </div>;
+
+type EditNoteProps = {
+  note: Note,
+  editNote: Note => void,
+  saveNote: Note => void,
+  cancelEdit: () => void
+};
+
+const EditNote = ({ note, editNote, saveNote, cancelEdit }: EditNoteProps) =>
+  <div
+    key={note.id}
+    style={{
+      position: "absolute",
+      left: note.x,
+      top: note.y,
+      width: 300
+    }}
+    className="card"
+  >
+    <header className="card-header">
+      <p className="card-header-title">
+        <input
+          value={note.title}
+          onChange={e => editNote({ ...note, title: e.target.value })}
+          className="input"
+        />
+      </p>
+    </header>
+    <div>
+      <div className="card-content">
+        <div className="content">
+          <textarea
+            value={note.text}
+            onChange={e => editNote({ ...note, text: e.target.value })}
+            className="input"
+            style={{ height: 115 }}
+          />
+        </div>
+      </div>
+      <footer className="card-footer">
+        <a className="card-footer-item" onClick={() => saveNote(note)}>
+          Save
+        </a>
+        <a className="card-footer-item" onClick={cancelEdit}>
+          Cancel
+        </a>
+      </footer>
+    </div>
+  </div>;
 
 render(<App />, document.querySelector("#root"));
