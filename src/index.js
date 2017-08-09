@@ -129,11 +129,16 @@ class App extends Component {
     return (
       <div>
         <div className="columns">
-          <form className="column" onSubmit={this.handleSubmit}>
+          <form
+            className="column is-three-quarters-mobile is-one-third-tablet"
+            style={{ margin: "20px auto" }}
+            onSubmit={this.handleSubmit}
+          >
             <input
               value={this.state.input}
               onChange={this.handleInput}
               className="input"
+              placeholder="Add a Note"
             />
           </form>
         </div>
