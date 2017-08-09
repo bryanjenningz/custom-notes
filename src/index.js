@@ -27,7 +27,9 @@ type DragPosition = {
 type XY = { x: number, y: number };
 
 class App extends Component {
-  state: AppState = { input: "", notes: [], dragPosition: null, edit: null };
+  state: AppState = JSON.parse(
+    localStorage.getItem("custom-notes") || "null"
+  ) || { input: "", notes: [], dragPosition: null, edit: null };
 
   componentDidMount = () => {
     window.addEventListener("mousemove", this.handleMouseMove);
@@ -37,6 +39,12 @@ class App extends Component {
   componentWillUnmount = () => {
     window.removeEventListener("mousemove", this.handleMouseMove);
     window.removeEventListener("mouseup", this.handleMouseUp);
+  };
+
+  componentWillUpdate = (nextProps, nextState) => {
+    if (!nextState.dragPosition) {
+      localStorage.setItem("custom-notes", JSON.stringify(nextState));
+    }
   };
 
   handleInput = event => {
