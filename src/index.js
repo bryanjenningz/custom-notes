@@ -13,8 +13,7 @@ type Note = {
   text: string,
   x: number,
   y: number,
-  width: number,
-  height: number
+  visible: boolean
 };
 
 type DragPosition = {
@@ -52,8 +51,7 @@ class App extends Component {
         text: input,
         x: 50,
         y: 50,
-        width: 200,
-        height: 200
+        visible: true
       })
     });
   };
@@ -89,6 +87,18 @@ class App extends Component {
 
       this.setState({ dragPosition: null, notes: newNotes });
     }
+  };
+
+  toggleNoteVisibility = noteId => {
+    const { notes } = this.state;
+    const newNotes = notes.map(note => {
+      if (note.id === noteId) {
+        return { ...note, visible: !note.visible };
+      } else {
+        return note;
+      }
+    });
+    this.setState({ notes: newNotes });
   };
 
   render() {
@@ -130,20 +140,26 @@ class App extends Component {
                 </a>
                 <a className="card-header-icon">
                   <span className="icon">
-                    <i className="fa fa-angle-down" />
+                    <i
+                      className="fa fa-angle-down"
+                      onClick={() => this.toggleNoteVisibility(note.id)}
+                    />
                   </span>
                 </a>
               </header>
-              <div className="card-content">
-                <div className="content">
-                  {note.text}
-                </div>
-              </div>
-              <footer className="card-footer">
-                <a className="card-footer-item">Save</a>
-                <a className="card-footer-item">Edit</a>
-                <a className="card-footer-item">Delete</a>
-              </footer>
+              {note.visible
+                ? <div>
+                    <div className="card-content">
+                      <div className="content">
+                        {note.text}
+                      </div>
+                    </div>
+                    <footer className="card-footer">
+                      <a className="card-footer-item">Edit</a>
+                      <a className="card-footer-item">Delete</a>
+                    </footer>
+                  </div>
+                : ""}
             </div>
           )}
         </div>
